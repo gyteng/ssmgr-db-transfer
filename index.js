@@ -39,11 +39,14 @@ if(from.indexOf('@') >= 0) {
 let knexTo;
 if(to.indexOf('@') >= 0) {
   const [user, password] = to.split('@')[0].split(':');
-  const [host, database] = to.split('@')[1].split('/');
+  const [address, database] = to.split('@')[1].split('/');
+  const host = address.split(':')[0];
+  const port = address.split(':')[1] || 3306;
   knexTo = knex({
     client: 'mysql',
     connection: {
       host,
+      port,
       user,
       password,
       database,
@@ -71,7 +74,13 @@ const transDb = name => {
   }).then(success => {
     const count = success[0]['count(*)'];
     const insert = number => {
-      return knexFrom(name).select().limit(50).offset(number * 50)
+      let promise;
+      if(name === 'group') {
+        promise = knexFrom(name).select().where('id', '>', 0).limit(50).offset(number * 50);
+      } else {
+        promise = knexFrom(name).select().limit(50).offset(number * 50);
+      }
+      return promise
       .then(data => {
         return knexTo(name).insert(data);
       });
