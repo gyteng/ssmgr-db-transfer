@@ -2,6 +2,7 @@ const process = require('process');
 const fs = require('fs');
 const from = process.argv[2];
 const to = process.argv[3];
+const tableName = process.argv[4];
 
 console.log(from, to);
 
@@ -38,11 +39,14 @@ if(from.indexOf('@') >= 0) {
 let knexTo;
 if(to.indexOf('@') >= 0) {
   const [user, password] = to.split('@')[0].split(':');
-  const [host, database] = to.split('@')[1].split('/');
+  const [address, database] = to.split('@')[1].split('/');
+  const host = address.split(':')[0];
+  const port = address.split(':')[1] || 3306;
   knexTo = knex({
     client: 'mysql',
     connection: {
       host,
+      port,
       user,
       password,
       database,
@@ -70,7 +74,13 @@ const transDb = name => {
   }).then(success => {
     const count = success[0]['count(*)'];
     const insert = number => {
-      return knexFrom(name).select().limit(50).offset(number * 50)
+      let promise;
+      if(name === 'group') {
+        promise = knexFrom(name).select().where('id', '>', 0).limit(50).offset(number * 50);
+      } else {
+        promise = knexFrom(name).select().limit(50).offset(number * 50);
+      }
+      return promise
       .then(data => {
         return knexTo(name).insert(data);
       });
@@ -92,24 +102,28 @@ const transDb = name => {
   });
 };
 
-fs.readdir('./db', (err, files) => {
-  if(err) { return; }
-  const tables = files.filter(f => {
-    return f.match(/\.js$/);
-  }).map(f => {
-    return f.substr(0, f.length - 3);
+if(tableName) {
+  transDb(tableName);
+} else {
+  fs.readdir('./db', (err, files) => {
+    if(err) { return; }
+    const tables = files.filter(f => {
+      return f.match(/\.js$/);
+    }).map(f => {
+      return f.substr(0, f.length - 3);
+    });
+    let i = 0;
+    const tablePromise = () => {
+      transDb(tables[i]).then(success => {
+        i += 1;
+        if(i >= tables.length) {
+          console.log('all talbes finish');
+          return;
+        } else {
+          return tablePromise();
+        }
+      })
+    };
+    tablePromise();
   });
-  let i = 0;
-  const tablePromise = () => {
-    transDb(tables[i]).then(success => {
-      i += 1;
-      if(i >= tables.length) {
-        console.log('all talbes finish');
-        return;
-      } else {
-        return tablePromise();
-      }
-    })
-  };
-  tablePromise();
-});
+}
