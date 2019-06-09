@@ -5,4 +5,6 @@ module.exports = function(table) {
   table.bigInteger('flow');
   table.bigInteger('time');
   table.index(['time', 'port'], 'index');
+  table.index('id');
+  table.index('accountId');
 }

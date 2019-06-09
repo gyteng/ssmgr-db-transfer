@@ -4,4 +4,5 @@ module.exports = function(table) {
   table.string('content', 16384);
   table.bigInteger('time');
   table.integer('group').defaultTo(0);
+  table.integer('autopop').defaultTo(0);
 }

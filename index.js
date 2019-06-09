@@ -9,8 +9,9 @@ console.log(from, to);
 const knex = require('knex');
 let knexFrom;
 if(from.indexOf('@') >= 0) {
-  const [user, password] = from.split('@')[0].split(':');
-  const [address, database] = from.split('@')[1].split('/');
+  const pos = from.lastIndexOf('@')
+  const [user, password] = from.substr(0, pos).split(':');
+  const [address, database] = from.substr(pos + 1).split('/');
   const host = address.split(':')[0];
   const port = address.split(':')[1] || 3306;
   knexFrom = knex({
@@ -38,8 +39,9 @@ if(from.indexOf('@') >= 0) {
 
 let knexTo;
 if(to.indexOf('@') >= 0) {
-  const [user, password] = to.split('@')[0].split(':');
-  const [address, database] = to.split('@')[1].split('/');
+  const pos = to.lastIndexOf('@')
+  const [user, password] = to.substr(0, pos).split(':');
+  const [address, database] = to.substr(pos + 1).split('/');
   const host = address.split(':')[0];
   const port = address.split(':')[1] || 3306;
   knexTo = knex({
@@ -68,7 +70,7 @@ if(to.indexOf('@') >= 0) {
 const transDb = name => {
   const promises = [];
   const table = require('./db/' + name);
-  return knexTo.schema.createTableIfNotExists(name, table)
+  return knexTo.schema.createTable(name, table)
   .then(success => {
     return knexFrom(name).count();
   }).then(success => {

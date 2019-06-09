@@ -10,4 +10,5 @@ module.exports = function(table) {
   table.string('resetPasswordId');
   table.bigInteger('resetPasswordTime');
   table.integer('group').defaultTo(0);
+  table.string('comment').defaultTo('');
 };
